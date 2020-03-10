@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+    integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
+  <title>Light Demo - K8S - HA Application</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header>
+    <div class="navbar navbar-dark bg-dark shadow-sm">
+      <div class="container d-flex justify-content-between">
+        <a href="#" class="navbar-brand d-flex align-items-center">
+          <strong>Light Demo - K8S - HA Application</strong>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main role="main">
+
+    <section class="jumbotron text-center">
+      <div class="container">
+        <h1>An example of a HA application using Kubernetes.</h1>
+        <p class="lead text-muted">Deployment manifests are located in the <code>/k8s</code> directory.</p>
+        <p class="lead">
+          Included is three backend services and one frontend service.
+          All services are routed using Traefik and configured with liveless &amp; readiness probes.
+        </p>
+        <p class="lead">
+          The frontend is set up to keep requesting the backend APIs, feel free to kill pods and servers to test the
+          scheduling capabilities og Kubernetes.
+        </p>
+      </div>
+    </section>
+
+    <div id="app">
+      <div class="album py-5 bg-light">
+        <div class="container">
+
+          <div class="row">
+
+            <div class="col-12" v-for="backend in backends">
+              <div class="card mb-4 shadow-sm">
+                <div class="row">
+                  <div class="col-md-4 pt-3">
+                    <template>
+                      <apexchart type="radar" :options="backend.nodeChart.options" :series="backend.nodeChart.series"></apexchart>
+                    </template>
+                  </div>
+                  <div class="col-md-8 pl-0">
+                    <div class="card-body">
+                      <h5 class="card-title">
+                        {{ backend.title }}
+                         - {{ backend.statusCodes[200] }} success / {{ backend.statusCodes[500] }} failed
+                         ({{ backend.statusCodes[200] / (backend.statusCodes[200] + backend.statusCodes[500]) * 100 }}%)
+
+                      </h5>
+                      <div class="row">
+                        <div class="col-6" v-for="entry in backend.history">
+                          <p class="card-text mb-0">
+                            <template v-if="entry.status == 200">
+                              <span class="badge badge-success">{{ entry.status }}</span>
+                              Pod {{ entry.deploymentId }}-{{ entry.containerId }}
+                              <small class="text-muted float-right">Node {{ entry.nodeId }}</small>
+                            </template>
+                            <template v-else>
+                              <span class="badge badge-danger">{{ entry.status }}</span>
+                            </template>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer class="text-muted">
+    <div class="container">
+      <p>Copyright 2020 &copy; <a href="https://github.com/SorenA" rel="noopener">Søren Lysdal</a>, released under MIT
+        on <a href="https://github.com/SorenA/light-demo-k8s-ha-application" rel="noopener">GitHub</a>.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue-apexcharts"></script>
+  
+
+  <script>
+    Vue.component('apexchart', VueApexCharts)
+
+    var app = new Vue({
+      el: '#app',
+      data: {
+        chartOptions: {
+
+        },
+        backends: [
+          {
+            title: 'Backend A',
+            apiUrl: 'http://a.backend.application.ha.k8s.demo.thyme.lightops.dk/api',
+            history: [],
+            statusCodes: {
+              200: 0,
+              500: 0,
+            },
+            nodeChart: {
+              options: {
+                xaxis: {
+                  categories: [],
+                },
+              },
+              series: [{
+                name: 'nodes',
+                data: [],
+              }],
+            },
+          },
+          {
+            title: 'Backend B',
+            apiUrl: 'http://b.backend.application.ha.k8s.demo.thyme.lightops.dk/api',
+            history: [],
+            statusCodes: {
+              200: 0,
+              500: 0,
+            },
+            nodeChart: {
+              options: {
+                xaxis: {
+                  categories: [],
+                },
+              },
+              series: [{
+                name: 'nodes',
+                data: [],
+              }],
+            },
+          },
+          {
+            title: 'Backend C',
+            apiUrl: 'http://c.backend.application.ha.k8s.demo.thyme.lightops.dk/api',
+            history: [],
+            statusCodes: {
+              200: 0,
+              500: 0,
+            },
+            nodeChart: {
+              options: {
+                xaxis: {
+                  categories: [],
+                },
+              },
+              series: [{
+                name: 'nodes',
+                data: [],
+              }],
+            },
+          },
+        ],
+      },
+      mounted: function() {
+        for (var i = 0; i < this.backends.length; i++) {
+          // Start polling backend
+          setInterval((idx) => {
+            this.callBackend(this.backends[idx]);
+          }, 250, i);
+
+          // Update charts
+          setInterval((idx) => {
+            this.backends[idx].nodeChart.series = [{
+              name: 'nodes',
+              data: this.backends[idx].nodeChart.series[0].data,
+            }];
+          }, 1000, i);
+        }
+      },
+      methods: {
+        callBackend: function (backend) {
+          fetch(backend.apiUrl)
+            .then((response) => {
+                if (!response.ok) {
+                  throw new Error("Not ok");
+                }
+                return response.json();
+              })
+            .then((data) => {
+              var nodeId = data.ip[1].split('.')[2];
+              backend.history.push({
+                status: 200,
+                deploymentId: data.hostname.split('-')[2],
+                containerId: data.hostname.split('-')[3],
+                nodeId: nodeId,
+              });
+              backend.statusCodes[200]++;
+
+              // Update chart data
+              backend.nodeChart.options.xaxis.categories[nodeId] = 'Node ' + nodeId;
+              backend.nodeChart.series[0].data[nodeId] = backend.history.filter((a) => a.nodeId === nodeId).length;
+            })
+            .catch((error) => {
+              backend.history.push({
+                status: 500,
+              });
+              backend.statusCodes[500]++;
+            })
+            .finally(() => {              
+              // Truncate length
+              backend.history = backend.history.slice(Math.max(backend.history.length - 24, 0));
+            });
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>
