@@ -1,0 +1,82 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: backend-c
+  namespace: light-demo-k8s-ha-application
+spec:
+  selector:
+    matchLabels:
+      app: backend-c
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: backend-c
+    spec:
+      # Define anti-affinity to prefer spreading pods across different nodes
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - backend-c
+              topologyKey: kubernetes.io/hostname
+      # Define containers in deployment
+      containers:
+      - image: containous/whoami:v1.4.0
+        name: backend-c
+        # Define liveness probe, pod is restarted if failed
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 2
+          periodSeconds: 5
+        # Define readiness probe, pod is included in traffic load balancing when successful
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 2
+          periodSeconds: 2
+
+---
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: backend-c-svc
+  namespace: light-demo-k8s-ha-application
+spec:
+  ports:
+  - name: http
+    port: 80
+  selector:
+    app: backend-c
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+
+metadata:
+  name: backend-c-ingress
+  namespace: light-demo-k8s-ha-application
+spec:
+  entryPoints:
+    - http
+  routes:
+  - match: Host(`c.backend.application.ha.k8s.demo.thyme.lightops.dk`) && PathPrefix(`/`)
+    kind: Rule
+    middlewares:
+    - name: allow-cors-all
+    services:
+    - name: backend-c-svc
+      namespace: light-demo-k8s-ha-application
+      port: 80

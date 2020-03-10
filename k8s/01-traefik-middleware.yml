@@ -1,0 +1,14 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+
+metadata:
+  name: allow-cors-all
+  namespace: light-demo-k8s-ha-application
+spec:
+  headers:
+    accessControlAllowMethods: 
+    - "GET"
+    accessControlAllowOrigin: "*"
+    accessControlMaxAge: 100
+    addVaryHeader: "true"
