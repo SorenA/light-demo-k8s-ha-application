@@ -7,8 +7,9 @@ metadata:
   namespace: light-demo-k8s-ha-application
 spec:
   headers:
-    accessControlAllowMethods: 
-    - "GET"
-    accessControlAllowOrigin: "*"
+    accessControlAllowMethods:
+      - "GET"
+    accessControlAllowOriginList:
+      - "*"
     accessControlMaxAge: 100
-    addVaryHeader: "true"
+    addVaryHeader: true
