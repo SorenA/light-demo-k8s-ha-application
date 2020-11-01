@@ -2,7 +2,7 @@ version: "3.7"
 services:
 
   frontend:
-    image: sorena/light-demo-k8s-ha-application:1.0.0
+    image: sorena/light-demo-k8s-ha-application:1.0.1
     build: .
     ports:
       - "8080:80"

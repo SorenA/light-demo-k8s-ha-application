@@ -30,7 +30,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       # Define containers in deployment
       containers:
-      - image: sorena/light-demo-k8s-ha-application:1.0.0
+      - image: sorena/light-demo-k8s-ha-application:1.0.1
         name: frontend
         # Define liveness probe, pod is restarted if failed
         livenessProbe:
